@@ -4,9 +4,7 @@
 
 ## 在线体验
 
-👉 [打开 Decision Companion Demo](https://YOUR_GITHUB_USERNAME.github.io/decision-companion-demo/)
 
-> 发布后，请将链接中的 `YOUR_GITHUB_USERNAME` 替换为你的 GitHub 用户名。
 
 ## 产品背景
 
