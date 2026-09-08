@@ -1,0 +1,1102 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b1020" />
+  <title>Decision Companion · 交互原型</title>
+  <style>
+    :root {
+      --ink: #10182c;
+      --muted: #667085;
+      --paper: #f7f8fc;
+      --card: #ffffff;
+      --line: #e6e8ef;
+      --blue: #4b62ff;
+      --blue-2: #7b8cff;
+      --blue-soft: #eef0ff;
+      --mint: #17a673;
+      --mint-soft: #e7f8f1;
+      --amber: #c76b12;
+      --amber-soft: #fff3e5;
+      --red: #cc445e;
+      --shadow: 0 30px 80px rgba(3, 8, 24, .42), 0 8px 24px rgba(3, 8, 24, .22);
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      color: #eef1ff;
+      background:
+        radial-gradient(circle at 14% 18%, rgba(86, 103, 255, .20), transparent 26rem),
+        radial-gradient(circle at 84% 82%, rgba(58, 214, 174, .10), transparent 25rem),
+        #090d18;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      overflow: hidden;
+    }
+
+    button { font: inherit; }
+
+    .stage {
+      min-height: 100%;
+      display: grid;
+      grid-template-columns: minmax(230px, 340px) minmax(330px, 430px) minmax(230px, 340px);
+      align-items: center;
+      justify-content: center;
+      gap: clamp(24px, 5vw, 86px);
+      padding: 28px 34px;
+    }
+
+    .brief { align-self: center; max-width: 340px; }
+    .eyebrow {
+      display: flex; align-items: center; gap: 10px;
+      color: #a9b4dc; font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+    }
+    .eyebrow::before { content: ""; width: 24px; height: 1px; background: #6473b7; }
+    .brief h1 { margin: 18px 0 14px; font-size: clamp(34px, 4vw, 58px); line-height: .98; letter-spacing: -.055em; }
+    .brief h1 span { color: #7f91ff; }
+    .brief p { color: #aeb7d4; font-size: 15px; line-height: 1.75; margin: 0; }
+    .principle {
+      margin-top: 28px; padding: 18px 0 0 18px; border-left: 2px solid #6d7cff;
+      color: #dfe4f8; font-size: 14px; line-height: 1.65;
+    }
+
+    .phone-wrap { position: relative; display: grid; place-items: center; }
+    .phone {
+      width: min(390px, 92vw);
+      aspect-ratio: 390 / 844;
+      max-height: calc(100vh - 42px);
+      background: var(--paper);
+      border: 8px solid #191d29;
+      border-radius: 48px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      color: var(--ink);
+      isolation: isolate;
+    }
+    .phone::after {
+      content: ""; position: absolute; inset: 0; border-radius: 40px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.35); pointer-events: none; z-index: 50;
+    }
+    .island { position: absolute; z-index: 60; width: 112px; height: 28px; border-radius: 18px; background: #090b10; top: 9px; left: 50%; transform: translateX(-50%); }
+
+    .screen { position: absolute; inset: 0; background: var(--paper); }
+    .conversation { display: flex; flex-direction: column; transition: transform .52s cubic-bezier(.2,.82,.2,1), filter .4s; }
+    .phone.decision-open .conversation { transform: translateY(-12%); filter: brightness(.78); }
+
+    .statusbar { height: 40px; padding: 13px 22px 0; display: flex; justify-content: space-between; font-weight: 750; font-size: 11px; flex: none; }
+    .status-icons { display: flex; gap: 5px; align-items: center; }
+    .signal { font-size: 10px; letter-spacing: -1px; }
+
+    .chat-head {
+      height: 54px; padding: 2px 18px 10px; display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid rgba(221,224,234,.8); background: rgba(247,248,252,.88); backdrop-filter: blur(14px); flex: none;
+    }
+    .head-person { display: flex; align-items: center; gap: 11px; }
+    .ai-dot { width: 32px; height: 32px; border-radius: 12px; display: grid; place-items: center; color: white; background: linear-gradient(145deg,#3f55ff,#8f73ff); box-shadow: 0 6px 18px rgba(79,94,255,.28); font-weight: 800; }
+    .head-title { font-size: 15px; font-weight: 780; letter-spacing: -.02em; }
+    .head-sub { color: var(--mint); font-size: 10px; margin-top: 1px; }
+    .more { border: 0; background: transparent; color: #7d859a; font-size: 21px; padding: 8px; cursor: pointer; }
+
+    .messages { flex: 1; overflow: auto; padding: 18px 15px 150px; scrollbar-width: none; }
+    .messages::-webkit-scrollbar, .decision-scroll::-webkit-scrollbar { display:none; }
+    .time { text-align: center; color: #9ca3b4; font-size: 10px; margin: 2px 0 16px; }
+    .bubble { max-width: 87%; padding: 11px 13px; border-radius: 17px; margin: 0 0 14px; font-size: 13px; line-height: 1.55; }
+    .bubble.ai { background: #fff; border: 1px solid #eceef3; border-bottom-left-radius: 5px; box-shadow: 0 5px 16px rgba(25,31,55,.055); }
+    .bubble.user { margin-left:auto; color:#fff; background: linear-gradient(145deg,#5267ff,#6e5cf4); border-bottom-right-radius:5px; box-shadow:0 7px 18px rgba(78,92,242,.18); }
+    .bubble strong { font-weight: 780; }
+
+    .snapshot { margin: -2px 0 16px; padding: 12px; background: #fff; border: 1px solid #e7e9f2; border-radius: 18px; box-shadow: 0 9px 23px rgba(28,35,63,.07); }
+    .snap-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .snap-title { font-weight: 780; font-size: 12px; }
+    .snap-meta { font-size: 10px; color: var(--muted); }
+    .mini-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+    .mini-card { border:0; padding:0; background:#f3f5fa; border-radius:11px; min-height:72px; cursor:pointer; text-align:left; overflow:hidden; position:relative; color: var(--ink); transition: transform .15s, box-shadow .15s; }
+    .mini-card:hover { transform:translateY(-2px); box-shadow:0 6px 14px rgba(30,40,70,.12); }
+    .mini-num { position:absolute; top:6px; left:6px; width:18px; height:18px; border-radius:7px; background:#fff; display:grid; place-items:center; font-size:9px; font-weight:800; box-shadow:0 2px 8px #dfe2ec; }
+    .device-tile { height:43px; display:grid; place-items:center; font-weight:850; font-size:17px; letter-spacing:-.08em; color:#fff; }
+    .mini-card:nth-child(1) .device-tile { background:linear-gradient(140deg,#6271db,#263161); }
+    .mini-card:nth-child(2) .device-tile { background:linear-gradient(140deg,#1e9b8a,#14524e); }
+    .mini-card:nth-child(3) .device-tile { background:linear-gradient(140deg,#ef965e,#994e46); }
+    .mini-name { padding:6px 7px 7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:9px; font-weight:750; }
+    .snap-foot { display:flex; align-items:center; justify-content:space-between; color:#6f778d; font-size:10px; margin-top:9px; }
+    .snap-foot b { color:var(--blue); font-weight:760; }
+
+    .commit { display:none; align-items:center; gap:8px; color:#6f778d; font-size:10px; line-height:1.4; margin:2px 1px 15px; }
+    .commit.show { display:flex; animation: appear .45s both; }
+    .commit::before,.commit::after { content:""; height:1px; background:#d9dce7; flex:1; }
+    .commit span { max-width:250px; text-align:center; }
+    @keyframes appear { from { opacity:0; transform:translateY(-5px)} to {opacity:1;transform:none} }
+
+    .composer { position:absolute; z-index:6; left:12px; right:12px; bottom:86px; height:46px; display:flex; align-items:center; gap:8px; padding:5px 6px 5px 14px; background:rgba(255,255,255,.94); border:1px solid #e1e4ed; border-radius:18px; box-shadow:0 8px 30px rgba(31,38,65,.12); color:#9ba2b2; font-size:12px; }
+    .send { margin-left:auto; border:0; width:34px; height:34px; border-radius:13px; background:#e9ecf4; color:#9aa0ad; }
+
+    .peek {
+      position:absolute; z-index:10; left:0; right:0; bottom:0; height:78px; border:0; border-top:1px solid rgba(222,225,235,.95); border-radius:23px 23px 0 0;
+      background:rgba(255,255,255,.96); backdrop-filter:blur(20px); box-shadow:0 -12px 34px rgba(30,38,68,.12); cursor:pointer; color:var(--ink); padding:10px 18px 14px; text-align:left;
+    }
+    .grab { width:36px; height:4px; border-radius:10px; background:#d5d8e2; margin:0 auto 9px; }
+    .peek-row { display:flex; align-items:center; gap:10px; }
+    .peek-icon { width:35px; height:35px; border-radius:12px; background:var(--blue-soft); color:var(--blue); display:grid; place-items:center; font-weight:850; }
+    .peek-copy { flex:1; }
+    .peek-title { font-size:12px; font-weight:800; }
+    .peek-sub { font-size:10px; color:var(--muted); margin-top:2px; }
+    .peek-arrow { color:var(--blue); font-size:19px; transform:rotate(-90deg); }
+    .peek.is-hidden { transform:translateY(110%); opacity:0; pointer-events:none; }
+    .peek.emphasis { border-top-color:#aeb8ff; box-shadow:0 -12px 38px rgba(75,98,255,.22); }
+    .peek.emphasis .peek-icon { color:#fff; background:linear-gradient(145deg,#5267ff,#725df2); }
+    .peek.emphasis .peek-title { color:#3549d2; }
+    .conversation.no-peek .composer { bottom:18px; }
+
+    .decision { z-index:20; transform:translateY(101%); transition:transform .56s cubic-bezier(.18,.87,.24,1); background:#f5f6fa; display:flex; flex-direction:column; }
+    .phone.decision-open .decision { transform:translateY(0); }
+    .decision-top { background:#11172a; color:#fff; padding:10px 16px 16px; flex:none; box-shadow:0 6px 20px rgba(9,14,31,.16); }
+    .decision-top .statusbar { padding:3px 6px 0; height:36px; }
+    .decision-nav { display:flex; align-items:center; justify-content:space-between; }
+    .back { border:0; background:rgba(255,255,255,.09); color:#fff; width:34px; height:34px; border-radius:12px; cursor:pointer; font-size:18px; }
+    .decision-label { text-align:center; }
+    .decision-label b { display:block; font-size:14px; }
+    .decision-label span { font-size:10px; color:#9ea8c9; }
+    .count-pill { min-width:42px; text-align:center; padding:7px 8px; border-radius:11px; background:#253053; color:#cbd2ff; font-size:11px; font-weight:800; transition:.3s; }
+    .progress { height:3px; background:#2e3650; border-radius:5px; margin-top:14px; overflow:hidden; }
+    .progress span { display:block; height:100%; width:68%; background:linear-gradient(90deg,#6d7fff,#5de0bd); border-radius:5px; }
+
+    .decision-scroll { flex:1; overflow:auto; padding:15px 14px 26px; scroll-behavior:smooth; }
+    .section-title { display:flex; align-items:flex-end; justify-content:space-between; margin:3px 2px 10px; }
+    .section-title h2 { margin:0; font-size:16px; letter-spacing:-.025em; }
+    .section-title span { font-size:10px; color:var(--muted); }
+    .judgment { background:#fff; border:1px solid #e5e7ef; border-radius:18px; padding:13px; box-shadow:0 7px 20px rgba(27,34,60,.055); }
+    .judgment-row { display:flex; gap:10px; align-items:flex-start; }
+    .judgment-icon { width:34px; height:34px; border-radius:12px; background:#ebeeff; color:var(--blue); display:grid; place-items:center; font-weight:850; }
+    .judgment-copy { flex:1; }
+    .judgment-main { display:flex; justify-content:space-between; gap:10px; font-size:12px; font-weight:780; }
+    .source { color:#8b92a3; font-size:10px; font-weight:500; margin-top:4px; line-height:1.45; }
+    .quote { color:#596176; }
+    .interpretation { margin-top:10px; padding:10px; border-radius:12px; background:#f7f8fc; border:1px solid #eceef4; }
+    .interpretation-head { display:flex; justify-content:space-between; align-items:center; color:#747c8f; font-size:9px; margin-bottom:7px; }
+    .confidence { color:#158661; background:#e8f8f1; border-radius:6px; padding:3px 5px; font-weight:750; }
+    .rule-chips { display:flex; flex-wrap:wrap; gap:5px; }
+    .rule-chip { padding:5px 7px; border-radius:8px; background:#fff; border:1px solid #e3e6ef; color:#394157; font-size:9px; font-weight:750; transition:.3s; }
+    .rule-chip.changed { color:#3348d9; border-color:#bec6ff; background:#f0f2ff; }
+    .segments { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; background:#f0f1f5; padding:3px; border-radius:11px; margin-top:12px; }
+    .seg { border:0; background:transparent; color:#7a8192; border-radius:8px; padding:7px 4px; cursor:pointer; font-size:11px; font-weight:700; }
+    .seg.active { color:#fff; background:var(--blue); box-shadow:0 4px 10px rgba(75,98,255,.25); }
+    .lock-row { display:flex; justify-content:space-between; gap:7px; margin-top:9px; }
+    .tag { flex:1; padding:8px 9px; border-radius:11px; background:#f5f6fa; font-size:10px; color:#656d7f; }
+    .tag b { color:#31394d; display:block; margin-bottom:2px; }
+    .other-judgments { margin-top:9px; background:#fff; border:1px solid #e5e7ef; border-radius:16px; overflow:hidden; }
+    .other-head { padding:10px 12px 7px; font-size:10px; font-weight:800; color:#687084; }
+    .other-row { display:grid; grid-template-columns:72px 1fr; gap:9px; padding:9px 12px; border-top:1px solid #eef0f4; font-size:9px; line-height:1.45; }
+    .other-row b { color:#283047; }
+    .other-row span { color:#747c8d; }
+    .type-pill { display:inline-block; width:max-content; margin-top:3px; padding:2px 5px; border-radius:5px; background:#f0f2f7; color:#6c7487; font-size:8px; font-weight:700; }
+
+    .impact { display:none; margin:12px 0 15px; border-radius:18px; overflow:hidden; border:1px solid #dde2eb; background:#fff; box-shadow:0 9px 24px rgba(27,34,60,.07); }
+    .impact.show { display:block; animation: impactIn .5s cubic-bezier(.2,.8,.2,1) both; }
+    @keyframes impactIn { from { opacity:0; transform:translateY(-8px) scale(.98)} to{opacity:1;transform:none} }
+    .impact-head { background:linear-gradient(100deg,#202b50,#344278); color:#fff; padding:11px 13px; display:flex; align-items:center; justify-content:space-between; }
+    .impact-head b { font-size:12px; }
+    .delta { padding:4px 7px; background:rgba(255,255,255,.12); border-radius:8px; font-size:10px; }
+    .impact-grid { display:grid; grid-template-columns:1fr 1fr; }
+    .gain,.cost { padding:12px; }
+    .gain { background:#f3fbf7; }
+    .cost { background:#fff9f2; border-left:1px solid #ece7df; }
+    .impact-label { font-size:10px; font-weight:800; margin-bottom:5px; }
+    .gain .impact-label { color:var(--mint); }
+    .cost .impact-label { color:var(--amber); }
+    .impact-text { font-size:10px; line-height:1.5; color:#535b6e; }
+
+    .candidates-title { margin-top:15px; }
+    .candidate-list { display:grid; gap:9px; }
+    .candidate { position:relative; display:grid; grid-template-columns:46px 1fr auto; gap:10px; align-items:center; background:#fff; border:1px solid #e5e7ef; border-radius:16px; padding:10px; transition:.45s; scroll-margin-top:14px; }
+    .candidate.highlight { border-color:#7484ff; box-shadow:0 0 0 3px rgba(93,112,255,.13),0 10px 22px rgba(38,47,84,.10); }
+    .candidate.new { animation: candidateIn .55s both; }
+    @keyframes candidateIn { from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none} }
+    .rank { width:46px; height:46px; border-radius:13px; color:#fff; display:grid; place-items:center; font-size:13px; font-weight:850; background:linear-gradient(145deg,#6574d9,#2b3568); }
+    .candidate:nth-child(2) .rank { background:linear-gradient(145deg,#249a8a,#185b57); }
+    .candidate:nth-child(3) .rank { background:linear-gradient(145deg,#e98f56,#9b5047); }
+    .candidate-name { font-size:12px; font-weight:800; }
+    .candidate-strategy { margin-top:2px; color:#5967dc; font-size:8px; font-weight:750; }
+    .candidate-fit { display:flex; flex-wrap:wrap; gap:4px; margin-top:5px; }
+    .fit { padding:3px 5px; border-radius:6px; font-size:8px; font-weight:750; background:#eef0f5; color:#5d6578; }
+    .fit.good { background:var(--mint-soft); color:#12815c; }
+    .fit.warn { background:var(--amber-soft); color:#a85b14; }
+    .price { text-align:right; font-size:11px; font-weight:800; }
+    .score { display:block; color:var(--blue); font-size:9px; margin-top:4px; }
+    .why { grid-column:2/4; margin-top:-3px; font-size:9px; color:#7d8495; line-height:1.45; }
+
+    /* V2 · PRD-aligned decision exploration */
+    .boundary-badge { color:#7357d7; background:#f0ebff; border-radius:7px; padding:3px 6px; font-size:9px; font-weight:800; }
+    .current-answer { margin-top:10px; padding:9px 10px; border-radius:12px; background:#f7f8fc; border:1px solid #eceef4; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .current-answer span { color:#747c8f; font-size:9px; }
+    .current-answer b { color:#283047; font-size:10px; }
+    .freeze-note { margin-top:9px; display:flex; align-items:center; gap:6px; color:#687084; font-size:9px; line-height:1.45; }
+    .freeze-note::before { content:"锁"; flex:none; width:20px; height:20px; border-radius:7px; display:grid; place-items:center; color:#5267da; background:#edf0ff; font-size:8px; font-weight:850; }
+    .plan-switch { display:grid; grid-template-columns:repeat(2,1fr); gap:7px; margin-top:12px; }
+    .plan { min-width:0; border:1px solid #e2e5ee; background:#f8f9fc; color:#667085; border-radius:12px; padding:8px 5px; cursor:pointer; transition:.22s; text-align:center; }
+    .plan:hover { border-color:#bfc7ff; transform:translateY(-1px); }
+    .plan strong { display:block; color:#333c52; font-size:9px; line-height:1.25; }
+    .plan span { display:block; margin-top:4px; font-size:10px; font-weight:850; }
+    .plan small { display:block; min-height:12px; margin-top:3px; color:#9299aa; font-size:7px; }
+    .plan.active { color:#fff; border-color:transparent; background:linear-gradient(145deg,#5368ff,#6d58ec); box-shadow:0 7px 16px rgba(75,98,255,.25); }
+    .plan.active strong,.plan.active small { color:#fff; }
+    .plan.active small { opacity:.76; }
+    .baseline-note { margin:11px 0 3px; padding:10px 12px; border:1px dashed #d8dce8; border-radius:13px; color:#687084; background:rgba(255,255,255,.55); font-size:9px; line-height:1.5; }
+    .impact-context { padding:10px 13px 0; color:#6c7487; font-size:9px; line-height:1.5; }
+    .impact-context b { color:#303950; }
+    .candidate { cursor:pointer; }
+    .candidate.entering { border-color:#a9ddca; background:#f8fffc; box-shadow:0 7px 18px rgba(23,166,115,.08); }
+    .candidate.entering::after { content:"新进入"; position:absolute; top:-7px; right:10px; padding:3px 6px; border-radius:7px; color:#087c56; background:#dff7ee; border:1px solid #bdebdc; font-size:7px; font-weight:850; }
+    .candidate.exiting { opacity:.48; filter:grayscale(.72); border-style:dashed; background:#f1f2f5; }
+    .candidate.exiting .rank { background:#969dac; }
+    .candidate.expanded { border-color:#8a99ff; box-shadow:0 0 0 3px rgba(93,112,255,.10); }
+    .candidate-action { grid-column:2/4; display:none; align-items:center; justify-content:space-between; gap:8px; padding-top:8px; border-top:1px solid #edf0f4; }
+    .candidate.expanded .candidate-action { display:flex; }
+    .candidate-action span { color:#737b8d; font-size:8px; line-height:1.35; }
+    .choose { flex:none; border:0; border-radius:9px; padding:7px 10px; color:#fff; background:#202b50; font-size:9px; font-weight:800; cursor:pointer; }
+    .choose:disabled { background:#c4c8d2; cursor:not-allowed; }
+    .decision-scroll { padding-bottom:132px; }
+    .decision-actions { flex:none; position:absolute; z-index:6; left:0; right:0; bottom:0; padding:10px 13px 14px; border-top:1px solid #e1e4ec; background:rgba(255,255,255,.96); backdrop-filter:blur(18px); transform:translateY(110%); transition:.3s; }
+    .decision-actions.show { transform:translateY(0); }
+    .action-caption { margin-bottom:7px; color:#727a8c; font-size:8px; text-align:center; }
+    .action-row { display:grid; grid-template-columns:1.2fr 1fr; gap:7px; }
+    .action-btn { border:0; border-radius:11px; padding:10px 8px; font-size:10px; font-weight:850; cursor:pointer; }
+    .action-btn.primary { color:#fff; background:linear-gradient(145deg,#5267ff,#6656eb); box-shadow:0 7px 16px rgba(75,98,255,.2); }
+    .action-btn.secondary { color:#46506a; background:#eef0f5; }
+    .action-btn.tertiary { grid-column:1/-1; padding:8px; color:#737b8f; background:transparent; border:1px solid #e2e5ec; }
+    .decision-result { position:absolute; z-index:80; inset:0; display:grid; place-items:center; padding:28px; color:#fff; background:rgba(12,17,32,.84); backdrop-filter:blur(16px); opacity:0; pointer-events:none; transition:.3s; }
+    .decision-result.show { opacity:1; pointer-events:auto; }
+    .result-card { width:100%; padding:24px 20px; border-radius:24px; color:#172039; background:#fff; box-shadow:0 28px 70px rgba(0,0,0,.35); text-align:center; transform:translateY(12px); transition:.35s; }
+    .decision-result.show .result-card { transform:none; }
+    .result-check { width:52px; height:52px; margin:0 auto 13px; border-radius:18px; display:grid; place-items:center; color:#fff; background:linear-gradient(145deg,#27b684,#138864); font-size:24px; font-weight:850; }
+    .result-card h3 { margin:0 0 7px; font-size:18px; }
+    .result-card p { margin:0; color:#687084; font-size:11px; line-height:1.6; }
+    .result-card button { margin-top:17px; width:100%; border:0; border-radius:12px; padding:11px; color:#fff; background:#202b50; font-size:11px; font-weight:800; cursor:pointer; }
+
+    .eval-open { margin-top:8px; width:100%; padding:12px 14px; border-radius:12px; border:1px solid rgba(109,127,255,.42); color:#f0f3ff; background:linear-gradient(135deg,rgba(82,103,255,.22),rgba(88,210,178,.11)); cursor:pointer; font-size:12px; font-weight:800; transition:.2s; }
+    .eval-open:hover { transform:translateY(-1px); background:linear-gradient(135deg,rgba(82,103,255,.3),rgba(88,210,178,.16)); }
+    .eval-overlay { position:fixed; z-index:200; inset:0; display:grid; place-items:center; padding:24px; background:rgba(4,7,15,.78); backdrop-filter:blur(18px); opacity:0; pointer-events:none; transition:.3s; }
+    .eval-overlay.show { opacity:1; pointer-events:auto; }
+    .eval-panel { width:min(940px,95vw); max-height:min(760px,92vh); display:flex; flex-direction:column; overflow:hidden; color:#172039; background:#f7f8fc; border:1px solid rgba(255,255,255,.6); border-radius:26px; box-shadow:0 36px 100px rgba(0,0,0,.46); transform:translateY(14px) scale(.985); transition:.35s; }
+    .eval-overlay.show .eval-panel { transform:none; }
+    .eval-head { flex:none; display:flex; justify-content:space-between; gap:20px; padding:20px 22px 16px; color:#fff; background:linear-gradient(120deg,#171f3a,#2b3867); }
+    .eval-kicker { color:#8fa0ed; font-size:10px; font-weight:850; letter-spacing:.14em; text-transform:uppercase; }
+    .eval-head h2 { margin:5px 0 5px; font-size:23px; letter-spacing:-.035em; }
+    .eval-head p { margin:0; color:#aeb8da; font-size:11px; line-height:1.5; }
+    .eval-close { flex:none; width:36px; height:36px; border:1px solid rgba(255,255,255,.12); border-radius:12px; color:#fff; background:rgba(255,255,255,.07); font-size:20px; cursor:pointer; }
+    .eval-summary { flex:none; display:grid; grid-template-columns:repeat(5,1fr); gap:8px; padding:12px 14px; border-bottom:1px solid #e3e6ee; background:#fff; }
+    .eval-stat { padding:10px 11px; border-radius:13px; background:#f5f6fa; border:1px solid #eceef3; }
+    .eval-stat b { display:block; font-size:17px; }
+    .eval-stat span { display:block; margin-top:3px; color:#778094; font-size:9px; }
+    .eval-stat.pass b { color:#12815c; }
+    .eval-stat.pending b { color:#b56417; }
+    .eval-stat.fail b { color:#bd3b3b; }
+    .eval-tabs { flex:none; display:flex; gap:5px; padding:9px 14px; overflow:auto; border-bottom:1px solid #e1e4ec; background:#fff; scrollbar-width:none; }
+    .eval-tab { border:0; border-radius:9px; padding:8px 11px; color:#697286; background:transparent; white-space:nowrap; font-size:10px; font-weight:800; cursor:pointer; }
+    .eval-tab.active { color:#fff; background:#5267ed; }
+    .eval-body { flex:1; overflow:auto; padding:16px; }
+    .eval-section { display:none; }
+    .eval-section.active { display:block; animation:appear .25s both; }
+    .eval-section h3 { margin:0 0 7px; font-size:17px; }
+    .eval-lead { margin:0 0 14px; color:#687084; font-size:11px; line-height:1.6; }
+    .evidence-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+    .evidence-card { padding:13px; border:1px solid #e2e5ed; border-radius:15px; background:#fff; }
+    .evidence-card h4 { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 0 7px; font-size:11px; }
+    .evidence-card p { margin:0; color:#6d7588; font-size:10px; line-height:1.55; }
+    .status { flex:none; padding:4px 7px; border-radius:7px; font-size:8px; font-weight:850; }
+    .status.pass { color:#087d56; background:#e4f8f0; }
+    .status.fail { color:#aa3030; background:#ffe8e8; }
+    .status.pending { color:#9b5a18; background:#fff0dc; }
+    .status.real { color:#3652d0; background:#e9edff; }
+    .mini-table { width:100%; border-collapse:separate; border-spacing:0; overflow:hidden; border:1px solid #e1e4ec; border-radius:13px; background:#fff; font-size:9px; }
+    .mini-table th,.mini-table td { padding:8px 9px; border-bottom:1px solid #edf0f4; text-align:left; vertical-align:top; }
+    .mini-table th { color:#60697d; background:#f2f4f8; font-weight:850; }
+    .mini-table tr:last-child td { border-bottom:0; }
+    .truth-chips { display:flex; flex-wrap:wrap; gap:5px; margin-top:10px; }
+    .truth-chip { padding:5px 7px; border-radius:8px; color:#087d56; background:#e6f8f1; font-size:8px; font-weight:800; }
+    .method-fix { margin-top:12px; padding:12px 13px; border-left:3px solid #6478f4; border-radius:0 12px 12px 0; color:#4f5870; background:#eef1ff; font-size:10px; line-height:1.55; }
+    .method-fix b { color:#26365f; }
+    .bad-list { display:grid; gap:8px; }
+    .bad-item { padding:11px 12px; border:1px solid #e3e6ed; border-radius:13px; background:#fff; }
+    .bad-item b { display:flex; justify-content:space-between; gap:8px; font-size:10px; }
+    .bad-item p { margin:5px 0 0; color:#6c7487; font-size:9px; line-height:1.5; }
+    @media (max-width:720px) { .eval-overlay{padding:10px}.eval-summary{grid-template-columns:repeat(2,1fr)}.evidence-grid{grid-template-columns:1fr}.eval-head{padding:17px}.eval-body{padding:12px} }
+
+    .toast { position:absolute; z-index:70; left:50%; top:57px; width:max-content; max-width:86%; transform:translate(-50%,-18px); opacity:0; pointer-events:none; color:#fff; background:rgba(17,23,42,.93); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:9px 12px; font-size:10px; box-shadow:0 8px 28px rgba(4,7,17,.28); transition:.35s; }
+    .toast.show { transform:translate(-50%,0); opacity:1; }
+
+    .tour { color:#b9c1dc; align-self:center; width:min(330px,100%); }
+    .tour-label { color:#7181c6; font-size:11px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; margin-bottom:14px; }
+    .tour h2 { margin:0 0 7px; color:#f0f3ff; font-size:20px; letter-spacing:-.025em; }
+    .tour-intro { margin:0 0 16px; color:#929cbb; font-size:12px; line-height:1.55; }
+    .case-list { display:grid; gap:8px; }
+    .case-btn { width:100%; display:grid; grid-template-columns:34px 1fr auto; gap:10px; align-items:center; padding:11px; border-radius:14px; border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.035); color:#d8def2; text-align:left; cursor:pointer; transition:.25s; }
+    .case-btn:hover { background:rgba(255,255,255,.07); }
+    .case-btn.active { border-color:rgba(116,134,255,.66); background:rgba(93,111,255,.12); box-shadow:0 10px 30px rgba(0,0,0,.12); }
+    .case-num { width:34px; height:34px; border-radius:10px; display:grid; place-items:center; background:rgba(255,255,255,.07); color:#aeb9e8; font-size:11px; font-weight:800; }
+    .case-btn.active .case-num { background:#5b6cff; color:#fff; }
+    .case-copy b { display:block; font-size:12px; margin-bottom:3px; }
+    .case-copy span { display:block; color:#8f99b8; font-size:10px; line-height:1.4; }
+    .case-state { padding:4px 6px; border-radius:7px; background:rgba(255,255,255,.07); color:#9fa9c8; font-size:8px; font-weight:800; white-space:nowrap; }
+    .case-btn.active .case-state { color:#cfd5ff; background:rgba(103,121,255,.2); }
+    .reset { margin-top:16px; width:100%; padding:11px 14px; border-radius:12px; border:1px solid rgba(255,255,255,.12); color:#dce2fa; background:rgba(255,255,255,.055); cursor:pointer; font-size:12px; transition:.2s; }
+    .reset:hover { background:rgba(255,255,255,.1); }
+
+    @media (max-width: 1040px) {
+      .stage { grid-template-columns: minmax(330px,430px) minmax(220px,300px); }
+      .brief { display:none; }
+    }
+    @media (max-width: 720px) {
+      body { overflow:auto; background:#090d18; }
+      .stage { min-height:100%; display:grid; grid-template-columns:1fr; padding:12px; }
+      .tour { display:none; }
+      .phone { width:min(390px, 94vw, calc((100vh - 24px) * .462)); max-height:none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <section class="brief" aria-label="产品概念说明">
+      <div class="eyebrow">Decision Companion</div>
+      <h1>先给出推荐，<br><span>再看清取舍。</span></h1>
+      <p>对话负责形成需求和推荐；当剩下的不是信息问题，而是“愿意牺牲什么”时，决策层才接管。</p>
+      <div class="principle">AI 仍然给出首选。<br>决策层让用户看见：这个首选对哪个偏好最敏感。</div>
+    </section>
+
+    <div class="phone-wrap">
+      <div class="phone" id="phone">
+        <div class="island" aria-hidden="true"></div>
+        <section class="screen conversation" id="conversationScreen" aria-label="Conversation 对话态">
+          <div class="statusbar"><span>9:41</span><span class="status-icons"><span class="signal">▮▮▮</span><span>◉</span><span>▰</span></span></div>
+          <header class="chat-head">
+            <div class="head-person"><div class="ai-dot">D</div><div><div class="head-title">选购搭档</div><div class="head-sub">● 正在帮你缩小选择</div></div></div>
+            <button class="more" aria-label="更多">···</button>
+          </header>
+          <div class="messages" id="messages">
+            <div id="conversationContent"></div>
+            <div class="commit" id="commit"><span id="commitText"></span></div>
+            <div class="bubble ai" id="afterBubble" style="display:none"></div>
+          </div>
+          <div class="composer"><span>继续说说你的使用习惯…</span><button class="send" aria-label="发送" disabled>↑</button></div>
+          <button class="peek" id="peek" aria-label="打开决策层">
+            <div class="grab"></div><div class="peek-row"><div class="peek-icon" id="peekIcon">5</div><div class="peek-copy"><div class="peek-title" id="peekTitle">首选取决于一个判断</div><div class="peek-sub" id="peekSub">“轻便 &gt; 性能” · 看反过来会怎样</div></div><div class="peek-arrow">⌃</div></div>
+          </button>
+        </section>
+
+        <section class="screen decision" aria-label="Decision 决策态">
+          <header class="decision-top">
+            <div class="statusbar"><span>9:41</span><span class="status-icons"><span class="signal">▮▮▮</span><span>◉</span><span>▰</span></span></div>
+            <div class="decision-nav">
+              <button class="back" id="back" aria-label="返回对话">‹</button>
+            <div class="decision-label"><b>检验一个判断</b><span>办公本 · 重量边界</span></div>
+              <div class="count-pill" id="countPill">3 款</div>
+            </div>
+            <div class="progress"><span></span></div>
+          </header>
+
+          <div class="decision-scroll" id="decisionScroll">
+            <div class="section-title"><h2>AI 正在这样判断</h2><span class="boundary-badge" id="boundaryBadge">暂定边界</span></div>
+            <div class="judgment">
+              <div class="judgment-row">
+                <div class="judgment-icon">↗</div>
+                <div class="judgment-copy">
+                  <div class="judgment-main"><span>重量上限</span><span id="weightLabel">≤ 1.35kg</span></div>
+                  <div class="source">AI 根据 <span class="quote">“每周两三次高铁，通常背半天”</span> 暂时推断</div>
+                </div>
+              </div>
+              <div class="current-answer">
+                <span>当前推荐</span><b id="currentAnswer">Yoga Air 14 · 3 款候选</b>
+              </div>
+              <div class="plan-switch" role="group" aria-label="重量方案">
+                <button class="plan active" data-plan="current"><strong>频繁携带</strong><span>≤1.35kg</span><small>当前方案</small></button>
+                <button class="plan" data-plan="relaxed"><strong>稍重换性能</strong><span>≤1.60kg</span><small>放宽</small></button>
+              </div>
+              <div class="freeze-note">只在候选结果真正变化的阈值停留；本次仅改变重量，预算、尺寸、用途与接口保持不变</div>
+              <div class="freeze-note">排名依据：先满足预算、尺寸等固定条件，再按出差适配、剪辑效率与接口完整度排序</div>
+            </div>
+
+            <div class="baseline-note" id="baselineNote"><b>这是当前参照。</b> 切换一个方案，看看候选空间和实际代价怎样变化。切换只预览，不会修改你的偏好。</div>
+
+            <div class="impact" id="impact" aria-live="polite">
+              <div class="impact-head"><b id="impactTitle">这个方案改变了什么</b><span class="delta" id="impactDelta">3 → 7 款</span></div>
+              <div class="impact-context" id="impactContext"></div>
+              <div class="impact-grid">
+                <div class="gain"><div class="impact-label">＋ 得到什么</div><div class="impact-text" id="gainText"></div></div>
+                <div class="cost"><div class="impact-label">− 牺牲什么</div><div class="impact-text" id="costText"></div></div>
+              </div>
+            </div>
+
+            <div class="section-title candidates-title"><h2>候选对照</h2><span id="sortHint">当前方案 · 全部3款</span></div>
+            <div class="candidate-list" id="candidateList"></div>
+          </div>
+          <div class="decision-actions" id="decisionActions">
+            <div class="action-caption" id="actionCaption">预览不会生效，确认后才会回写对话</div>
+            <div class="action-row">
+              <button class="action-btn primary" id="acceptTradeoff">接受这个取舍</button>
+              <button class="action-btn secondary" id="keepBoundary">保留 1.35kg</button>
+              <button class="action-btn tertiary" id="rejectSpace">这些都不合适 · 继续聊</button>
+            </div>
+          </div>
+        </section>
+        <div class="toast" id="toast">已定位：正在看它为什么排在这里</div>
+        <div class="decision-result" id="decisionResult">
+          <div class="result-card"><div class="result-check">✓</div><h3 id="resultTitle">决定已记录</h3><p id="resultCopy"></p><button id="resultContinue">回到对话</button></div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="tour" aria-label="触发规则示例">
+      <div class="tour-label">Trigger examples</div>
+      <h2>什么时候需要决策层？</h2>
+      <p class="tour-intro">依次切换四种对话状态。只有需求已形成且存在可操作的价值取舍，Peek 才会接管。</p>
+      <div class="case-list">
+        <button class="case-btn" data-case="incomplete"><span class="case-num">01</span><span class="case-copy"><b>信息仍然不足</b><span>AI 继续追问，不显示 Peek</span></span><span class="case-state">不接活</span></button>
+        <button class="case-btn active" data-case="sensitive"><span class="case-num">02</span><span class="case-copy"><b>推荐对偏好敏感</b><span>AI 已推荐，Peek 安静出现</span></span><span class="case-state">就绪</span></button>
+        <button class="case-btn" data-case="hesitation"><span class="case-num">03</span><span class="case-copy"><b>用户明确犹豫</b><span>AI 提示一次，Peek 强化</span></span><span class="case-state">接引</span></button>
+        <button class="case-btn" data-case="boundary"><span class="case-num">04</span><span class="case-copy"><b>反复试探边界</b><span>识别重量条件正在摇摆</span></span><span class="case-state">接引</span></button>
+      </div>
+      <button class="reset" id="reset">重置当前例子</button>
+      <button class="eval-open" id="openEvaluation">查看评测证据 →</button>
+    </aside>
+  </main>
+
+  <div class="eval-overlay" id="evaluationOverlay" role="dialog" aria-modal="true" aria-label="评测证据">
+    <section class="eval-panel">
+      <header class="eval-head">
+        <div><div class="eval-kicker">Evaluation evidence</div><h2>评测证据，不把计划冒充结果</h2><p>确定性闸门与外部复述已完成；当前原型未接入可重复调用的被测模型，相关结果不虚构。</p></div>
+        <button class="eval-close" id="closeEvaluation" aria-label="关闭评测">×</button>
+      </header>
+      <div class="eval-summary">
+        <div class="eval-stat pass"><b id="buildGateScore">—</b><span>HTML实时数据检查</span></div>
+        <div class="eval-stat pass"><b>15/15</b><span>Peek规则真值表</span></div>
+        <div class="eval-stat pass"><b>10/10</b><span>状态转换路径</span></div>
+        <div class="eval-stat pass"><b>3人完成</b><span>外部复述 · 定性走查</span></div>
+        <div class="eval-stat pending"><b>未运行</b><span>模型提取与双基线</span></div>
+      </div>
+      <nav class="eval-tabs" aria-label="评测分类">
+        <button class="eval-tab active" data-eval-tab="gates">交付闸门</button>
+        <button class="eval-tab" data-eval-tab="study">10人走查</button>
+        <button class="eval-tab" data-eval-tab="uncertain">非确定性评测</button>
+        <button class="eval-tab" data-eval-tab="baseline">最强基线</button>
+        <button class="eval-tab" data-eval-tab="badcases">Bad Case</button>
+        <button class="eval-tab" data-eval-tab="boundary">证明边界</button>
+      </nav>
+      <div class="eval-body">
+        <section class="eval-section active" data-eval-section="gates">
+          <h3>确定性部分：错一条就不交付</h3>
+          <p class="eval-lead">2026-09-07 对最终交付HTML执行：Peek规则15/15、HTML核对16/16、状态路径10/10，全部通过。下面10项还会在每次打开页面时现场重算。</p>
+          <div class="evidence-grid" id="buildChecks"></div>
+          <div class="truth-chips"><span class="truth-chip">T01—T15 · 15/15</span><span class="truth-chip">H01—H16 · 16/16</span><span class="truth-chip">S01—S10 · 10/10</span><span class="truth-chip">结果文件已留档</span></div>
+          <div class="method-fix"><b>评测方法也被修正过：</b>初版11条“不触发”、1条“触发”，空实现也能通过大多数案例。现在补入T13—T15三条正向边界，并把不可能的T10状态修正为“0候选、0方案”。</div>
+        </section>
+        <section class="eval-section" data-eval-section="study">
+          <h3>10人探索性对照：取舍更清楚，也暴露了强迫收敛</h3>
+          <p class="eval-lead">5人看纯文字，5人操作决策层。样本很小且并非真实购买任务，因此报告人数和区间，不做统计显著性或效果外推。</p>
+          <table class="mini-table"><thead><tr><th>阶段/组别</th><th>观察指标</th><th>结果</th></tr></thead><tbody>
+            <tr><td>进入实验前 · 10人</td><td>商品选择</td><td>5人无法决定；3人Yoga；2人ThinkBook</td></tr>
+            <tr><td>进入实验前 · 10人</td><td>偏好方向 / 重量边界</td><td>4人在意重量、6人在意性能；10人均无法给出重量上限</td></tr>
+            <tr><td>纯文字组 · 5人</td><td>方案与确定感</td><td>4人保留1.35kg、1人接受1.60kg；确定感2—3/5，仍希望继续询问其他排序</td></tr>
+            <tr><td>决策层组 · 5人</td><td>方案与偏好表达</td><td>5人接受1.60kg；5人能说清“用什么换什么”；确定感4—5/5</td></tr>
+          </tbody></table>
+          <div class="evidence-grid" style="margin-top:10px">
+            <article class="evidence-card"><h4>观察到的增量 <span class="status pass">方向性</span></h4><p>参与者把“性能更重要”转化成了可执行的1.60kg边界，并能复述扩展坞、导出时间和重量代价。看过决策层的纯文字组还主动要求手动操作，称其更有掌控感和安全感。</p></article>
+            <article class="evidence-card"><h4>不能当成成功率 <span class="status fail">重要风险</span></h4><p>决策层组5人全部接受同一方案，同时有人说“有点没得选”。这可能是清晰度提升，也可能是界面锚定和单一路径劝服，不能解释为“100%形成真实偏好”。</p></article>
+            <article class="evidence-card"><h4>候选空间不匹配 <span class="status real">新发现</span></h4><p>多人真正关心品牌、软件生态或游戏能力，倾向苹果或专业游戏本。说明他们拒绝的不是某个重量阈值，而是整个候选域。</p></article>
+            <article class="evidence-card"><h4>产品修正 <span class="status pass">已加入</span></h4><p>决策层新增“这些都不合适”出口：不写入重量偏好，退回对话继续澄清品牌、生态和设备类型，避免为了完成任务强迫二选一。</p></article>
+          </div>
+          <div class="method-fix"><b>本轮最稳妥的结论：</b>决策层能让一个既有取舍变得可操作、可表达，并提升主观掌控感；但只有在候选域本身被用户接受时才应介入。它不能替用户决定该买哪一类产品。</div>
+        </section>
+        <section class="eval-section" data-eval-section="uncertain">
+          <h3>真正需要测量的四处</h3>
+          <p class="eval-lead">脚本化Demo不调用模型。已完成能够诚实执行的人工部分；需要可重复模型调用的两项保留为未运行。</p>
+          <div class="evidence-grid">
+            <article class="evidence-card"><h4>对话状态提取 <span class="status pending">未运行</span></h4><p>15条盲标案例与固定JSON格式已冻结，但当前环境没有API Key，也不能建立三次独立模型调用。这里不拿人工判断冒充模型准确率。</p></article>
+            <article class="evidence-card"><h4>重复稳定性 <span class="status pending">未运行</span></h4><p>必须由同一模型对15条案例独立运行3次。没有三次真实调用，就不能声称“稳定”。</p></article>
+            <article class="evidence-card"><h4>暂定边界依据 <span class="status real">已复核</span></h4><p>7条AI推断案例的场景原句都能支持探索轻量边界；但“为什么恰好是1.35kg”缺少校准证据，因此阈值统一记为存疑，而非准确。</p></article>
+            <article class="evidence-card"><h4>外部复述 <span class="status pass">3人完成</span></h4><p>三人都识别出重量边界探索；A、C明确说当前只是预览。没有明确的直接因果误读，但C的“重量和性能一起比”暴露单变量表达含混，A指出250g缺少现实参照。已补“唯一改变”与小瓶水参照。</p></article>
+          </div>
+        </section>
+        <section class="eval-section" data-eval-section="baseline">
+          <h3>纯对话基线要跑两遍</h3>
+          <p class="eval-lead">同模型、同对话、同商品数据。当前没有可重复调用的被测模型，因此保留测试设计和输入，但不生成模拟结果。</p>
+          <table class="mini-table"><thead><tr><th>基线</th><th>输入</th><th>验证什么</th><th>状态</th></tr></thead><tbody><tr><td>基线A · 被动用户</td><td>只输入原对话</td><td>AI是否主动暴露敏感边界</td><td><span class="status pending">8条未运行</span></td></tr><tr><td>基线B · 主动用户</td><td>明确问“放宽到1.60kg得到/失去什么”</td><td>用户已经知道怎么问时，纯对话能做到什么</td><td><span class="status pending">4条未运行</span></td></tr></tbody></table>
+          <div class="method-fix"><b>比较结论：</b>纯对话不是做不到，而是需要用户先知道哪个边界值得问。本方案新增的是主动发现边界，并让尚未形成的偏好可逆地被试探和确认。</div>
+        </section>
+        <section class="eval-section" data-eval-section="badcases">
+          <h3>真实发现与预防性规则分开记录</h3>
+          <p class="eval-lead">真实问题和预防性规则分开记录；每个问题都对应产品修正。</p>
+          <div class="bad-list">
+            <article class="bad-item"><b>BC-1 · 多条件同时变化 <span class="status real">真实发现</span></b><p>旧版调整“便携”时同时改重量和续航，导致无法归因。修正为一次只改变重量。</p></article>
+            <article class="bad-item"><b>BC-2 · 越界商品进入候选 <span class="status real">真实发现</span></b><p>1.50kg的ThinkBook曾进入≤1.35kg候选。修正为严格按阈值计算资格。</p></article>
+            <article class="bad-item"><b>BC-3 · 为凑三档制造弱方案 <span class="status real">推理发现</span></b><p>收紧到≤1.25kg后首选仍是Yoga，用户实际减重为0。该档已从V1界面移除。</p></article>
+            <article class="bad-item"><b>BC-4 · 用演示数据反改用户条件 <span class="status real">评审发现</span></b><p>原对话预算7000元，却把7299元和8999元商品计入候选；早期错误地把预算改成9000元。正确修复是保留用户的7000元条件，并从候选中排除超预算商品。</p></article>
+            <article class="bad-item"><b>BC-5 · 清晰被误当成偏好形成 <span class="status real">10人走查</span></b><p>决策层组5人全部接受1.60kg，但同时反馈“有点没得选”。一致选择可能来自界面锚定，不能直接记为成功。</p></article>
+            <article class="bad-item"><b>BC-6 · 用户拒绝整个候选域 <span class="status real">10人走查</span></b><p>多人实际更在意品牌、软件生态或游戏能力。新增“这些都不合适”出口，返回对话重新形成候选域，不回写重量偏好。</p></article>
+          </div>
+        </section>
+        <section class="eval-section" data-eval-section="boundary">
+          <h3>这套评测能证明什么</h3>
+          <div class="evidence-grid"><article class="evidence-card"><h4>可以证明 <span class="status pass">范围内</span></h4><p>机制与状态闭环正确；解释可追溯；相比纯对话新增反事实探索、代价对照与偏好确认结构。</p></article><article class="evidence-card"><h4>不能证明 <span class="status pending">不越界</span></h4><p>不证明推荐更准、用户更满意、决策质量或转化率提升，也不证明已适配其他品类。</p></article></div>
+          <div class="method-fix"><b>Demo与评测的关系：</b>本HTML是脚本化交互演示，不在运行时调用模型；对话理解离线评测。两条链路共用相同商品数据和状态定义。</div>
+        </section>
+      </div>
+    </section>
+  </div>
+
+  <script type="text/plain" id="legacy-demo-script">
+    const initial = [
+      { id:'yoga', name:'Yoga Air 14', strategy:'选择倾向 · 轻装出差', price:'¥5,999', score:'最合适', tags:[['1.25kg','good'],['12h 续航','good']], why:'排第 1：最轻、续航余量最大；代价是剪辑等待更久。' },
+      { id:'magic', name:'MagicBook Pro', strategy:'选择倾向 · 安静办公', price:'¥5,799', score:'较合适', tags:[['1.39kg','good'],['安静','good']], why:'排第 2：更安静、屏幕均衡，但接口需要偶尔转接。' },
+      { id:'think', name:'ThinkBook 14+', strategy:'选择倾向 · 性能均衡', price:'¥6,199', score:'有妥协', tags:[['接口全','good'],['1.50kg','warn']], why:'排第 3：接口和性能更强，但超过当前 1.35kg 目标。' }
+    ];
+    const relaxed = [
+      { id:'think', name:'ThinkBook 14+', strategy:'选择倾向 · 性能均衡', price:'¥6,199', score:'最合适', tags:[['性能释放','good'],['1.50kg','warn']], why:'升至第 1：重量进入新范围，接口与剪辑性能开始占优。' },
+      { id:'xiaoxin', name:'小新 Pro 14', strategy:'选择倾向 · 内存余量', price:'¥5,499', score:'新进入', tags:[['32GB','good'],['1.46kg','warn']], why:'新进入：多任务和剪辑更从容，通勤多背约 210g。' },
+      { id:'yoga', name:'Yoga Air 14', strategy:'选择倾向 · 轻装出差', price:'¥5,999', score:'仍合适', tags:[['1.25kg','good'],['性能一般','warn']], why:'降至第 3：仍然最轻，但性能不再得到额外加权。' },
+      { id:'wuwei', name:'无畏 Pro 14', strategy:'选择倾向 · 导出速度', price:'¥5,699', score:'新进入', tags:[['高性能','good'],['1.58kg','warn']], why:'新进入：导出更快，代价是满载风扇声和重量。' }
+    ];
+
+    const phone = document.getElementById('phone');
+    const list = document.getElementById('candidateList');
+    const scroller = document.getElementById('decisionScroll');
+    const impact = document.getElementById('impact');
+    const countPill = document.getElementById('countPill');
+    const weightLabel = document.getElementById('weightLabel');
+    const sortHint = document.getElementById('sortHint');
+    const commit = document.getElementById('commit');
+    const afterBubble = document.getElementById('afterBubble');
+    const messages = document.getElementById('messages');
+    const toast = document.getElementById('toast');
+    const ruleWeight = document.getElementById('ruleWeight');
+    const ruleBattery = document.getElementById('ruleBattery');
+    const conversationContent = document.getElementById('conversationContent');
+    const conversationScreen = document.getElementById('conversationScreen');
+    const peek = document.getElementById('peek');
+    const peekIcon = document.getElementById('peekIcon');
+    const peekTitle = document.getElementById('peekTitle');
+    const peekSub = document.getElementById('peekSub');
+    let currentScenario = 'sensitive';
+    let changed = false;
+    let touchStartY = null;
+
+    const baseConversation = `
+      <div class="time">今天 09:38</div>
+      <div class="bubble user">想买台 Windows 办公本，预算 6,000 左右。我经常出差，但偶尔也要剪视频。</div>
+      <div class="bubble ai">你每周大概带它出门几次、要背多久？剪的视频通常是什么规格？这会决定性能要不要优先于重量。</div>
+      <div class="bubble user">每周两三次高铁，通常背半天。1080p、十分钟以内，一个月剪两三次。</div>
+      <div class="bubble ai">明白。14 英寸和预算是底线；剪辑是加分项。我先把“经常出差”理解成整机尽量不超过 1.35kg、办公续航至少 9 小时。</div>`;
+
+    function snapshotHTML() {
+      return `<div class="snapshot" aria-label="候选快照">
+        <div class="snap-head"><div class="snap-title">决策快照</div><div class="snap-meta" id="snapMeta">5 款候选 · 刚刚</div></div>
+        <div class="mini-grid">
+          <button class="mini-card preview-product" data-product="yoga" aria-label="打开决策层并定位 Yoga Air 14"><span class="mini-num">1</span><div class="device-tile">YOGA</div><div class="mini-name">Yoga Air 14</div></button>
+          <button class="mini-card preview-product" data-product="magic" aria-label="打开决策层并定位 MagicBook Pro"><span class="mini-num">2</span><div class="device-tile">MAGIC</div><div class="mini-name">MagicBook Pro</div></button>
+          <button class="mini-card preview-product" data-product="think" aria-label="打开决策层并定位 ThinkBook 14+"><span class="mini-num">3</span><div class="device-tile">THINK</div><div class="mini-name">ThinkBook 14+</div></button>
+        </div>
+        <div class="snap-foot"><span>AI 已给出首选</span><b>点一款看取舍 →</b></div>
+      </div>`;
+    }
+
+    const scenarios = {
+      incomplete: {
+        head:'还在了解你的需求', hidden:true, emphasis:false,
+        title:'', sub:'',
+        html:`<div class="time">今天 09:38</div>
+          <div class="bubble user">想买台电脑，最近这台有点慢。</div>
+          <div class="bubble ai">可以。你主要在哪些场景使用？办公软件、剪辑、游戏，还是经常需要带出门？</div>
+          <div class="bubble user">还没想好，可能办公，也可能以后学点剪辑。</div>
+          <div class="bubble ai"><strong>现在还不适合开始比较。</strong>我还需要知道你的预算、移动频率和主要任务，先把需求范围弄清楚。</div>`
+      },
+      sensitive: {
+        head:'推荐已形成', hidden:false, emphasis:false,
+        title:'首选取决于一个判断', sub:'“轻便 > 性能” · 看反过来会怎样',
+        html:baseConversation + `
+          <div class="bubble user">屏幕至少 14 英寸，风扇别一直响，接口够用就好。</div>
+          <div class="bubble ai"><strong>我会先选 Yoga Air 14。</strong>它最符合出差使用；但这个推荐高度依赖我把“轻便”放在了“剪辑性能”之前。</div>` + snapshotHTML()
+      },
+      hesitation: {
+        head:'发现一个未决取舍', hidden:false, emphasis:true,
+        title:'这不是谁更好，是拿什么换什么', sub:'看看你的取舍边界',
+        html:baseConversation + `
+          <div class="bubble ai"><strong>我会先选 Yoga Air 14。</strong>它更轻，续航余量也更大。</div>` + snapshotHTML() + `
+          <div class="bubble user">但 ThinkBook 性能明显更好吧？这几个到底哪个好，我还是有点纠结。</div>
+          <div class="bubble ai">参数已经够了。现在真正没定的是：你愿不愿意多背约 250g，换更快的剪辑和更全的接口。可以展开试一下。</div>`
+      },
+      boundary: {
+        head:'识别到边界试探', hidden:false, emphasis:true,
+        title:'你似乎正在试重量边界', sub:'看每档重量具体换来什么',
+        html:baseConversation + `
+          <div class="bubble user">最好还是控制在 1.3kg 以内。</div>
+          <div class="bubble ai">那 Yoga Air 14 会明显领先，我会优先排除更重的高性能机型。</div>
+          <div class="bubble user">不过如果剪辑真的快很多，1.5kg 好像也不是不能接受。</div>
+          <div class="bubble ai">你刚刚连续改变的是重量边界。看来真正需要判断的是：<strong>多背这 200–300g 到底值不值。</strong></div>` + snapshotHTML()
+      }
+    };
+
+    function renderCandidates(items, animate=false) {
+      list.innerHTML = items.map((p,i) => `
+        <article class="candidate ${animate ? 'new' : ''}" id="product-${p.id}" style="animation-delay:${i*.06}s">
+          <div class="rank">${String(i+1).padStart(2,'0')}</div>
+          <div><div class="candidate-name">${p.name}</div><div class="candidate-strategy">${p.strategy}</div><div class="candidate-fit">${p.tags.map(t=>`<span class="fit ${t[1]}">${t[0]}</span>`).join('')}</div></div>
+          <div class="price">${p.price}<span class="score">${p.score}</span></div>
+          <div class="why">${p.why}</div>
+        </article>`).join('');
+    }
+
+    function setStep() {}
+
+    function restorePeekCopy() {
+      const scenario = scenarios[currentScenario];
+      peekIcon.textContent = '5';
+      peekTitle.textContent = scenario.title;
+      peekSub.textContent = scenario.sub;
+      peek.classList.toggle('is-hidden', scenario.hidden);
+      peek.classList.toggle('emphasis', scenario.emphasis);
+      conversationScreen.classList.toggle('no-peek', scenario.hidden);
+    }
+
+    function setScenario(id) {
+      currentScenario = id;
+      const scenario = scenarios[id];
+      phone.classList.remove('decision-open');
+      changed = false;
+      conversationContent.innerHTML = scenario.html;
+      document.querySelector('.head-sub').textContent = '● ' + scenario.head;
+      document.querySelectorAll('.case-btn').forEach(b => b.classList.toggle('active', b.dataset.case === id));
+      document.querySelectorAll('.seg').forEach(b => b.classList.toggle('active', b.dataset.weight === 'high'));
+      weightLabel.textContent = '高'; countPill.textContent = '5 款'; sortHint.textContent = '更看重便携';
+      ruleWeight.textContent = '整机 ≤ 1.35kg'; ruleBattery.textContent = '办公续航 ≥ 9h';
+      ruleWeight.classList.remove('changed'); ruleBattery.classList.remove('changed');
+      impact.classList.remove('show'); commit.classList.remove('show'); afterBubble.style.display = 'none';
+      renderCandidates(initial); scroller.scrollTop = 0; restorePeekCopy();
+      requestAnimationFrame(() => { messages.scrollTop = messages.scrollHeight; });
+    }
+
+    function openDecision(productId) {
+      if (scenarios[currentScenario].hidden) return;
+      phone.classList.add('decision-open');
+      setStep(productId ? 2 : 2);
+      if (productId) {
+        setTimeout(() => {
+          const target = document.getElementById('product-' + productId);
+          if (!target) return;
+          target.scrollIntoView({behavior:'smooth', block:'center'});
+          target.classList.add('highlight');
+          toast.classList.add('show');
+          setTimeout(() => toast.classList.remove('show'), 2100);
+          setTimeout(() => target.classList.remove('highlight'), 2600);
+        }, 620);
+      } else {
+        scroller.scrollTop = 0;
+      }
+    }
+
+    function closeDecision() {
+      phone.classList.remove('decision-open');
+      setStep(changed ? 4 : 1);
+      if (changed) setTimeout(() => { messages.scrollTop = messages.scrollHeight; }, 450);
+    }
+
+    function changeWeight(weight) {
+      document.querySelectorAll('.seg').forEach(b => b.classList.toggle('active', b.dataset.weight === weight));
+      const labels = { low:'低', mid:'中', high:'高' };
+      weightLabel.textContent = labels[weight];
+      if (weight === 'mid') {
+        changed = true;
+        countPill.textContent = '9 款';
+        ruleWeight.textContent = '整机 ≤ 1.60kg';
+        ruleBattery.textContent = '办公续航 ≥ 7.5h';
+        ruleWeight.classList.add('changed'); ruleBattery.classList.add('changed');
+        sortHint.textContent = '兼顾性能与便携';
+        impact.classList.add('show');
+        renderCandidates(relaxed, true);
+        commit.classList.add('show');
+        afterBubble.style.display = 'block';
+        const snapMeta = document.getElementById('snapMeta'); if (snapMeta) snapMeta.textContent = '9 款候选 · 已更新';
+        peekIcon.textContent = '9';
+        peekTitle.textContent = '9 款候选 · 已放宽便携限制';
+        peekSub.textContent = '性能机型回到选择空间';
+        setStep(4);
+        setTimeout(() => impact.scrollIntoView({behavior:'smooth', block:'nearest'}), 100);
+      } else if (weight === 'high') {
+        changed = false;
+        countPill.textContent = '5 款';
+        ruleWeight.textContent = '整机 ≤ 1.35kg';
+        ruleBattery.textContent = '办公续航 ≥ 9h';
+        ruleWeight.classList.remove('changed'); ruleBattery.classList.remove('changed');
+        sortHint.textContent = '更看重便携';
+        impact.classList.remove('show');
+        renderCandidates(initial);
+        commit.classList.remove('show');
+        afterBubble.style.display = 'none';
+        const snapMeta = document.getElementById('snapMeta'); if (snapMeta) snapMeta.textContent = '5 款候选 · 刚刚';
+        restorePeekCopy();
+        setStep(3);
+      } else {
+        changed = true;
+        countPill.textContent = '12 款';
+        ruleWeight.textContent = '整机 ≤ 1.85kg';
+        ruleBattery.textContent = '办公续航 ≥ 6.5h';
+        ruleWeight.classList.add('changed'); ruleBattery.classList.add('changed');
+        sortHint.textContent = '更看重性能';
+        impact.classList.add('show');
+        renderCandidates(relaxed.slice().reverse(), true);
+        peekIcon.textContent = '12';
+        peekTitle.textContent = '12 款候选 · 更偏向性能';
+        peekSub.textContent = '重量不再是主要限制';
+        setStep(4);
+      }
+    }
+
+    function resetDemo() {
+      setScenario(currentScenario);
+    }
+
+    setScenario('sensitive');
+    document.getElementById('peek').addEventListener('click', () => openDecision());
+    document.getElementById('back').addEventListener('click', closeDecision);
+    document.getElementById('reset').addEventListener('click', resetDemo);
+    document.querySelectorAll('.case-btn').forEach(b => b.addEventListener('click', () => setScenario(b.dataset.case)));
+    messages.addEventListener('click', e => { const target = e.target.closest('.preview-product'); if (target) openDecision(target.dataset.product); });
+    document.querySelectorAll('.seg').forEach(b => b.addEventListener('click', () => changeWeight(b.dataset.weight)));
+
+    peek.addEventListener('pointerdown', e => { touchStartY = e.clientY; peek.setPointerCapture?.(e.pointerId); });
+    peek.addEventListener('pointerup', e => { if (touchStartY !== null && touchStartY - e.clientY > 22) openDecision(); touchStartY = null; });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && phone.classList.contains('decision-open')) closeDecision();
+      if (e.key.toLowerCase() === 'r') resetDemo();
+    });
+  </script>
+  <script>
+    const PRODUCTS = {
+      lg: {id:'lg', name:'LG gram 14', short:'GRAM', weight:1.19, export:14.5, battery:12, portKinds:3, price:'¥8,999', strategy:'极致轻量', tags:[['1.19kg','good'],['12h 续航','good']]},
+      yoga: {id:'yoga', name:'Yoga Air 14', short:'YOGA', weight:1.25, export:12.5, battery:11, portKinds:3, price:'¥6,999', strategy:'轻装出差', tags:[['1.25kg','good'],['11h 续航','good']]},
+      air: {id:'air', name:'小新 Air 14', short:'AIR', weight:1.30, export:13, battery:10.5, portKinds:3, price:'¥5,299', strategy:'预算均衡', tags:[['1.30kg','good'],['¥5,299','good']]},
+      magic: {id:'magic', name:'MagicBook X 14', short:'MAGIC', weight:1.32, export:13.5, battery:10, portKinds:3, price:'¥4,999', strategy:'价格优先', tags:[['1.32kg','good'],['价格更低','good']]},
+      zen: {id:'zen', name:'灵耀 14', short:'ZEN', weight:1.34, export:12, battery:10.2, portKinds:3, price:'¥7,299', strategy:'屏幕与质感', tags:[['1.34kg','good'],['10.2h 续航','good']]},
+      xpro: {id:'xpro', name:'小新 Pro 14', short:'PRO', weight:1.46, export:10.5, battery:9.8, portKinds:4, price:'¥5,999', strategy:'内存余量', tags:[['1.46kg','warn'],['导出 10.5min','good']]},
+      think: {id:'think', name:'ThinkBook 14+', short:'THINK', weight:1.50, export:9, battery:9.5, portKinds:5, price:'¥6,499', strategy:'性能与接口', tags:[['1.50kg','warn'],['导出 9min','good']]},
+      wuwei: {id:'wuwei', name:'无畏 Pro 14', short:'VIVO', weight:1.55, export:9.5, battery:9, portKinds:3, price:'¥5,799', strategy:'导出效率', tags:[['1.55kg','warn'],['导出 9.5min','good']]},
+      tianxuan: {id:'tianxuan', name:'天选 Air 14', short:'AIR+', weight:1.58, export:8.5, battery:8, portKinds:3, price:'¥6,299', strategy:'性能释放', tags:[['1.58kg','warn'],['导出 8.5min','good']]}
+    };
+
+    const BASELINE_ORDER = ['yoga','air','magic'];
+    const PLAN_DATA = {
+      current: {
+        threshold:'≤ 1.35kg', count:3, first:'Yoga Air 14', order:BASELINE_ORDER, display:BASELINE_ORDER,
+        delta:'', title:'', context:'', gain:'', cost:'', caption:'这是 AI 暂时采用的边界'
+      },
+      relaxed: {
+        threshold:'≤ 1.60kg', count:7, first:'ThinkBook 14+', order:['think','xpro','yoga','tianxuan','wuwei','air','magic'], display:['think','xpro','yoga','tianxuan','wuwei','air','magic'],
+        delta:'3 → 7 款', title:'放宽到 ≤1.60kg',
+        context:'<b>唯一改变是重量上限。</b>4 款产品因此进入范围；性能与续航变化来自候选重排，首选从 Yoga Air 14 变为 ThinkBook 14+。',
+        gain:'对比 Yoga，10 分钟视频导出快约 3–4 分钟<br>接口种类 3 → 5',
+        cost:'ThinkBook 整机重约 250g（约一小瓶水）<br>办公续航少约 1.5 小时',
+        caption:'你正在预览另一种方案；确认前不会修改偏好'
+      }
+    };
+
+    const phone = document.getElementById('phone');
+    const list = document.getElementById('candidateList');
+    const scroller = document.getElementById('decisionScroll');
+    const impact = document.getElementById('impact');
+    const countPill = document.getElementById('countPill');
+    const weightLabel = document.getElementById('weightLabel');
+    const currentAnswer = document.getElementById('currentAnswer');
+    const sortHint = document.getElementById('sortHint');
+    const commit = document.getElementById('commit');
+    const commitText = document.getElementById('commitText');
+    const afterBubble = document.getElementById('afterBubble');
+    const messages = document.getElementById('messages');
+    const toast = document.getElementById('toast');
+    const conversationContent = document.getElementById('conversationContent');
+    const conversationScreen = document.getElementById('conversationScreen');
+    const peek = document.getElementById('peek');
+    const peekIcon = document.getElementById('peekIcon');
+    const peekTitle = document.getElementById('peekTitle');
+    const peekSub = document.getElementById('peekSub');
+    const baselineNote = document.getElementById('baselineNote');
+    const impactTitle = document.getElementById('impactTitle');
+    const impactDelta = document.getElementById('impactDelta');
+    const impactContext = document.getElementById('impactContext');
+    const gainText = document.getElementById('gainText');
+    const costText = document.getElementById('costText');
+    const decisionActions = document.getElementById('decisionActions');
+    const actionCaption = document.getElementById('actionCaption');
+    const acceptTradeoff = document.getElementById('acceptTradeoff');
+    const keepBoundary = document.getElementById('keepBoundary');
+    const rejectSpace = document.getElementById('rejectSpace');
+    const decisionResult = document.getElementById('decisionResult');
+    const resultTitle = document.getElementById('resultTitle');
+    const resultCopy = document.getElementById('resultCopy');
+    let currentScenario = 'sensitive';
+    let selectedPlan = 'current';
+    let hasExplored = false;
+    let pendingCommit = null;
+    let touchStartY = null;
+
+    const baseConversation = `
+      <div class="time">今天 09:38</div>
+      <div class="bubble user">想买台 Windows 办公本，预算不超过 7,000。我经常出差，但偶尔也要剪视频。</div>
+      <div class="bubble ai">你每周大概带它出门几次、要背多久？剪的视频通常是什么规格？这会决定性能要不要优先于重量。</div>
+      <div class="bubble user">每周两三次高铁，通常背半天。1080p、十分钟以内，一个月剪两三次。</div>
+      <div class="bubble ai">明白。14 英寸和预算比较明确；剪辑是加分项。我先把“经常出差”暂时理解成整机不超过 1.35kg。这个边界还不是你的真实底线。</div>`;
+
+    function snapshotHTML() {
+      return `<div class="snapshot" aria-label="候选快照">
+        <div class="snap-head"><div class="snap-title">当前推荐</div><div class="snap-meta" id="snapMeta">3 款候选 · 暂定边界</div></div>
+        <div class="mini-grid">
+          <button class="mini-card preview-product" data-product="yoga"><span class="mini-num">1</span><div class="device-tile">YOGA</div><div class="mini-name">Yoga Air 14</div></button>
+          <button class="mini-card preview-product" data-product="air"><span class="mini-num">2</span><div class="device-tile">AIR</div><div class="mini-name">小新 Air 14</div></button>
+          <button class="mini-card preview-product" data-product="magic"><span class="mini-num">3</span><div class="device-tile">MAGIC</div><div class="mini-name">MagicBook X 14</div></button>
+        </div>
+        <div class="snap-foot"><span>AI 已给出首选</span><b>点一款看它为何在这里 →</b></div>
+      </div>`;
+    }
+
+    const scenarios = {
+      incomplete: {
+        head:'还在了解你的需求', hidden:true, emphasis:false, title:'', sub:'',
+        html:`<div class="time">今天 09:38</div><div class="bubble user">想买台电脑，最近这台有点慢。</div><div class="bubble ai">可以。你主要在哪些场景使用？办公、剪辑、游戏，还是经常带出门？</div><div class="bubble user">还没想好，可能办公，也可能以后学点剪辑。</div><div class="bubble ai"><strong>现在还不适合开始比较。</strong>预算、移动频率和主要任务都还没形成，先继续聊。</div>`
+      },
+      sensitive: {
+        head:'推荐已形成', hidden:false, emphasis:false,
+        title:'首选依赖「重量 ≤1.35kg」', sub:'放宽到 1.60kg，4 款机型会进入 · 首选也会变',
+        html:baseConversation + `<div class="bubble user">屏幕至少 14 英寸，风扇别一直响，接口够用就好。</div><div class="bubble ai"><strong>我会先选 Yoga Air 14。</strong>但这个推荐高度依赖我暂时采用的 1.35kg 重量边界。</div>` + snapshotHTML()
+      },
+      hesitation: {
+        head:'发现一个未决取舍', hidden:false, emphasis:true,
+        title:'这不是谁更好，是拿什么换什么', sub:'多背约 250g，会换来更快剪辑与更完整接口',
+        html:baseConversation + `<div class="bubble ai"><strong>我会先选 Yoga Air 14。</strong>它更轻，续航余量也更大。</div>` + snapshotHTML() + `<div class="bubble user">但 ThinkBook 性能明显更好吧？我还是不知道该选哪个。</div><div class="bubble ai">信息已经够了。现在没定的是：你愿不愿意多背约 250g，换取更快剪辑和更完整接口。可以展开试一下。</div>`
+      },
+      boundary: {
+        head:'识别到边界试探', hidden:false, emphasis:true,
+        title:'你似乎正在试重量边界', sub:'从 1.35kg 到 1.60kg，看看具体换来什么',
+        html:baseConversation + `<div class="bubble user">最好还是控制在 1.3kg 左右。</div><div class="bubble ai">那 Yoga Air 14 会明显领先，更重的高性能机型不会进入当前候选。</div><div class="bubble user">不过如果剪辑真的快很多，1.5kg 好像也不是不能接受。</div><div class="bubble ai">你连续改变的是重量边界。真正要判断的是：<strong>多背这 200–300g 到底值不值。</strong></div>` + snapshotHTML()
+      }
+    };
+
+    function rankIn(planId, productId) {
+      const index = PLAN_DATA[planId].order.indexOf(productId);
+      return index < 0 ? null : index + 1;
+    }
+
+    function candidateState(planId, productId) {
+      const inBaseline = rankIn('current', productId) !== null;
+      const inTarget = rankIn(planId, productId) !== null;
+      if (planId === 'relaxed' && !inBaseline && inTarget) return 'entering';
+      return '';
+    }
+
+    function candidateWhy(planId, p, state) {
+      const oldRank = rankIn('current', p.id);
+      const newRank = rankIn(planId, p.id);
+      if (state === 'entering') return `因重量进入范围：${p.weight.toFixed(2)}kg ≤ 1.60kg · 新排名第 ${newRank}`;
+      if (planId === 'relaxed' && p.id === 'yoga') return '仍在候选：从第 1 降到第 3；轻量优势保留，但性能不再占优。';
+      if (planId === 'current' && p.id === 'yoga') return '当前第 1：在 1.35kg 边界内，轻量与续航最符合出差场景。';
+      return `${p.weight.toFixed(2)}kg · 导出 ${p.export}min · 办公续航 ${p.battery}h`;
+    }
+
+    function renderCandidates(planId, focusId) {
+      const plan = PLAN_DATA[planId];
+      list.innerHTML = plan.display.map((id, i) => {
+        const p = PRODUCTS[id];
+        const state = candidateState(planId, id);
+        const rank = rankIn(planId, id);
+        const canChoose = state !== 'exiting';
+        return `<article class="candidate ${state} new" id="product-${id}" data-product="${id}" style="animation-delay:${i*.04}s">
+          <div class="rank">${rank ? String(rank).padStart(2,'0') : '—'}</div>
+          <div><div class="candidate-name">${p.name}</div><div class="candidate-strategy">${p.strategy}</div><div class="candidate-fit">${p.tags.map(t=>`<span class="fit ${t[1]}">${t[0]}</span>`).join('')}</div></div>
+          <div class="price">${p.price}<span class="score">${state==='entering'?'新进入':state==='exiting'?'暂时退出':rank===1?'当前首选':`第 ${rank}`}</span></div>
+          <div class="why">${candidateWhy(planId,p,state)}</div>
+          <div class="candidate-action"><span>普通点击只展开解释，不会完成选择。</span><button class="choose" data-choose="${id}" ${canChoose?'':'disabled'}>就选它</button></div>
+        </article>`;
+      }).join('');
+      if (focusId) requestAnimationFrame(() => focusProduct(focusId));
+    }
+
+    function renderPlan(planId, focusId) {
+      selectedPlan = planId;
+      const plan = PLAN_DATA[planId];
+      document.querySelectorAll('.plan').forEach(b => b.classList.toggle('active', b.dataset.plan === planId));
+      weightLabel.textContent = plan.threshold;
+      countPill.textContent = `${plan.count} 款`;
+      currentAnswer.textContent = `${plan.first} · ${plan.count} 款候选`;
+      sortHint.textContent = planId === 'current' ? '当前方案 · 全部3款' : '放宽方案 · 全部7款';
+      if (planId === 'current') {
+        impact.classList.remove('show');
+        baselineNote.style.display = 'block';
+      } else {
+        hasExplored = true;
+        baselineNote.style.display = 'none';
+        impactTitle.textContent = plan.title;
+        impactDelta.textContent = plan.delta;
+        impactContext.innerHTML = plan.context;
+        gainText.innerHTML = plan.gain;
+        costText.innerHTML = plan.cost;
+        impact.classList.add('show');
+      }
+      actionCaption.textContent = planId === 'current' && hasExplored ? '你已经看过其他方案，可以确认 1.35kg 是真实底线' : plan.caption;
+      acceptTradeoff.textContent = planId === 'current' ? '当前方案无需接受' : '接受 1.60kg 方案';
+      acceptTradeoff.disabled = planId === 'current';
+      acceptTradeoff.style.opacity = planId === 'current' ? '.45' : '1';
+      keepBoundary.textContent = planId === 'current' ? '确认保留 1.35kg' : '保留 1.35kg';
+      decisionActions.classList.toggle('show', planId !== 'current' || hasExplored);
+      renderCandidates(planId, focusId);
+      if (planId !== 'current') setTimeout(() => impact.scrollIntoView({behavior:'smooth',block:'nearest'}), 80);
+    }
+
+    function restorePeekCopy() {
+      const scenario = scenarios[currentScenario];
+      peekIcon.textContent = '3';
+      peekTitle.textContent = scenario.title;
+      peekSub.textContent = scenario.sub;
+      peek.classList.toggle('is-hidden', scenario.hidden);
+      peek.classList.toggle('emphasis', scenario.emphasis);
+      conversationScreen.classList.toggle('no-peek', scenario.hidden);
+    }
+
+    function setScenario(id) {
+      currentScenario = id;
+      phone.classList.remove('decision-open');
+      decisionResult.classList.remove('show');
+      selectedPlan = 'current'; hasExplored = false; pendingCommit = null;
+      conversationContent.innerHTML = scenarios[id].html;
+      document.querySelector('.head-sub').textContent = '● ' + scenarios[id].head;
+      document.querySelectorAll('.case-btn').forEach(b => b.classList.toggle('active', b.dataset.case === id));
+      commit.classList.remove('show'); commitText.textContent = ''; afterBubble.style.display='none'; afterBubble.textContent='';
+      decisionActions.classList.remove('show');
+      restorePeekCopy(); renderPlan('current'); scroller.scrollTop=0;
+      requestAnimationFrame(() => messages.scrollTop = messages.scrollHeight);
+    }
+
+    function openDecision(productId) {
+      if (scenarios[currentScenario].hidden) return;
+      selectedPlan='current'; hasExplored=false; decisionActions.classList.remove('show');
+      phone.classList.add('decision-open'); renderPlan('current', productId); scroller.scrollTop=0;
+    }
+
+    function focusProduct(productId) {
+      const target=document.getElementById('product-'+productId);
+      if (!target) return;
+      target.scrollIntoView({behavior:'smooth',block:'center'}); target.classList.add('highlight','expanded');
+      toast.textContent='已定位：这是它在当前方案中的位置'; toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'),1900); setTimeout(()=>target.classList.remove('highlight'),2400);
+    }
+
+    function closeDecision() {
+      if (!phone.classList.contains('decision-open')) return;
+      phone.classList.remove('decision-open');
+      selectedPlan='current'; hasExplored=false; decisionActions.classList.remove('show'); renderPlan('current');
+    }
+
+    function commitDecision(type, productId) {
+      let line='', reply='', title='偏好边界已记录', copy='这次探索已经成为后续推荐的新依据。';
+      if (type==='no-fit') {
+        title='没有强行做决定';
+        line='探索未完成：当前候选都不合适 · 重量偏好未修改';
+        reply='看来真正需要补充的不是重量边界，而是品牌、软件生态或游戏能力。我们回到对话，先重新定义候选范围。';
+        copy='本次不写入1.35kg或1.60kg结论，返回对话继续形成需求。';
+      } else if (type==='keep') {
+        line='已确认：重量 ≤1.35kg 是底线 · 后续不再以增加重量换取性能';
+        reply='明白。1.35kg 现在是你看过代价后仍坚持的底线，我不会再主动建议用增重换性能。';
+        copy='你看过放宽后的收益，仍然保留了 1.35kg。';
+      } else if (type==='select') {
+        const p=PRODUCTS[productId]; title=`已选择 ${p.name}`;
+        if (selectedPlan==='relaxed') line=`已选择 ${p.name} · 接受放宽至 1.60kg，以换取更快剪辑与更多性能选择`;
+        else line=`已选择 ${p.name} · 保留当前 1.35kg 重量边界`;
+        reply=`选择已记录。你的商品选择和它对应的重量取舍会一起进入后续流程。`;
+        copy=`系统同时保存了这款商品对应的重量方案，不会把商品选择与偏好结论分开。`;
+      } else if (selectedPlan==='relaxed') {
+        line='已确认：重量边界 1.35kg → 1.60kg · 接受多背约 250g，换取更快剪辑与更完整接口';
+        reply='选择空间已按新边界更新。ThinkBook 14+ 成为首选，我会继续沿用你刚刚确认的取舍。';
+        copy='你愿意多背约 250g，换取更快剪辑和更完整接口。';
+      }
+      pendingCommit={line,reply}; resultTitle.textContent=title; resultCopy.textContent=copy; decisionResult.classList.add('show');
+    }
+
+    function finishResult() {
+      decisionResult.classList.remove('show'); phone.classList.remove('decision-open');
+      if (pendingCommit) {
+        commitText.textContent=pendingCommit.line; commit.classList.add('show');
+        afterBubble.textContent=pendingCommit.reply; afterBubble.style.display='block';
+        peek.classList.add('is-hidden'); conversationScreen.classList.add('no-peek');
+        setTimeout(()=>messages.scrollTop=messages.scrollHeight,320);
+      }
+    }
+
+    const evaluationOverlay = document.getElementById('evaluationOverlay');
+    const buildChecks = document.getElementById('buildChecks');
+    const buildGateScore = document.getElementById('buildGateScore');
+
+    function runBuildChecks() {
+      const products = Object.values(PRODUCTS);
+      const priceOf = p => Number(String(p.price).replace(/[^0-9]/g,''));
+      const eligible = products.filter(p => priceOf(p) <= 7000);
+      const currentIds = eligible.filter(p => p.weight <= 1.35).map(p => p.id);
+      const relaxedIds = eligible.filter(p => p.weight <= 1.60).map(p => p.id);
+      const enteredIds = relaxedIds.filter(id => !currentIds.includes(id));
+      const checks = [
+        {name:'当前方案候选数', pass:currentIds.length===3 && PLAN_DATA.current.count===3, detail:`按预算 ≤7000 且重量 ≤1.35kg 重算为 ${currentIds.length} 款；页面定义为 ${PLAN_DATA.current.count} 款。`},
+        {name:'放宽方案候选数', pass:relaxedIds.length===7 && PLAN_DATA.relaxed.count===7, detail:`预算保持 ≤7000，仅放宽重量至 ≤1.60kg，重算为 ${relaxedIds.length} 款。`},
+        {name:'候选差分', pass:enteredIds.length===4, detail:`放宽后新进入 ${enteredIds.length} 款，期望为 4 款。`},
+        {name:'严格阈值资格', pass:currentIds.every(id=>PRODUCTS[id].weight<=1.35), detail:'当前方案中不存在重量超过 1.35kg 的商品。'},
+        {name:'首选与排名变化', pass:PLAN_DATA.current.order[0]==='yoga' && PLAN_DATA.relaxed.order[0]==='think' && rankIn('relaxed','yoga')===3, detail:`首选 Yoga → ThinkBook；Yoga 在放宽方案中降至第 ${rankIn('relaxed','yoga')}。`},
+        {name:'归因关键数字', pass:Math.round((PRODUCTS.think.weight-PRODUCTS.yoga.weight)*1000)===250 && PRODUCTS.yoga.export-PRODUCTS.think.export===3.5 && PRODUCTS.yoga.battery-PRODUCTS.think.battery===1.5, detail:'由商品数据重算：重量 +250g、导出快 3.5 分钟、续航少 1.5 小时。'},
+        {name:'V1仅保留有效两档', pass:Object.keys(PLAN_DATA).length===2 && !PLAN_DATA.tight && document.querySelectorAll('.plan').length===2, detail:'无效的 ≤1.25kg 弱方案已移除，只保留两个有差分的世界。'},
+        {name:'预算条件没有被改写', pass:[...currentIds,...relaxedIds].every(id=>priceOf(PRODUCTS[id])<=7000) && !relaxedIds.includes('lg') && !relaxedIds.includes('zen'), detail:'预算始终为 ≤7000；¥7,299 的灵耀与 ¥8,999 的 LG gram 均未进入候选。'},
+        {name:'最终页面展示全集', pass:PLAN_DATA.current.display.length===3 && PLAN_DATA.relaxed.display.length===7, detail:'当前档展示 3 款，放宽档展示 7 款，不用截断列表掩盖差分。'},
+        {name:'单变量约束', pass:PLAN_DATA.relaxed.threshold.includes('1.60kg') && PLAN_DATA.current.threshold.includes('1.35kg'), detail:'方案切换仅改变重量阈值；其他条件保持冻结。'}
+      ];
+      const passed = checks.filter(c=>c.pass).length;
+      buildGateScore.textContent = `${passed}/${checks.length}`;
+      const scoreCard = buildGateScore.closest('.eval-stat');
+      scoreCard.classList.toggle('pass', passed===checks.length);
+      scoreCard.classList.toggle('fail', passed!==checks.length);
+      buildChecks.innerHTML = checks.map(c=>`<article class="evidence-card"><h4>${c.name}<span class="status ${c.pass?'pass':'fail'}">${c.pass?'通过':'失败'}</span></h4><p>${c.detail}</p></article>`).join('');
+    }
+
+    function openEvaluation() {
+      runBuildChecks();
+      evaluationOverlay.classList.add('show');
+      document.body.style.overflow='hidden';
+    }
+
+    function closeEvaluation() {
+      evaluationOverlay.classList.remove('show');
+      document.body.style.overflow='';
+    }
+
+    setScenario('sensitive');
+    runBuildChecks();
+    document.getElementById('peek').addEventListener('click',()=>openDecision());
+    document.getElementById('openEvaluation').addEventListener('click',openEvaluation);
+    document.getElementById('closeEvaluation').addEventListener('click',closeEvaluation);
+    evaluationOverlay.addEventListener('click',e=>{if(e.target===evaluationOverlay)closeEvaluation();});
+    document.querySelectorAll('.eval-tab').forEach(tab=>tab.addEventListener('click',()=>{
+      document.querySelectorAll('.eval-tab').forEach(item=>item.classList.toggle('active',item===tab));
+      document.querySelectorAll('.eval-section').forEach(section=>section.classList.toggle('active',section.dataset.evalSection===tab.dataset.evalTab));
+    }));
+    document.getElementById('back').addEventListener('click',closeDecision);
+    document.getElementById('reset').addEventListener('click',()=>setScenario(currentScenario));
+    document.querySelectorAll('.case-btn').forEach(b=>b.addEventListener('click',()=>setScenario(b.dataset.case)));
+    document.querySelectorAll('.plan').forEach(b=>b.addEventListener('click',()=>renderPlan(b.dataset.plan)));
+    messages.addEventListener('click',e=>{const t=e.target.closest('.preview-product');if(t)openDecision(t.dataset.product);});
+    list.addEventListener('click',e=>{
+      const choose=e.target.closest('[data-choose]'); if(choose){e.stopPropagation();commitDecision('select',choose.dataset.choose);return;}
+      const card=e.target.closest('.candidate'); if(card)card.classList.toggle('expanded');
+    });
+    acceptTradeoff.addEventListener('click',()=>{if(selectedPlan!=='current')commitDecision('accept');});
+    keepBoundary.addEventListener('click',()=>{if(hasExplored)commitDecision('keep');});
+    rejectSpace.addEventListener('click',()=>commitDecision('no-fit'));
+    document.getElementById('resultContinue').addEventListener('click',finishResult);
+    peek.addEventListener('pointerdown',e=>{touchStartY=e.clientY;peek.setPointerCapture?.(e.pointerId);});
+    peek.addEventListener('pointerup',e=>{if(touchStartY!==null&&touchStartY-e.clientY>22)openDecision();touchStartY=null;});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(evaluationOverlay.classList.contains('show'))closeEvaluation();else if(decisionResult.classList.contains('show'))decisionResult.classList.remove('show');else closeDecision();}if(e.key.toLowerCase()==='r'&&!evaluationOverlay.classList.contains('show'))setScenario(currentScenario);});
+  </script>
+</body>
+</html>
